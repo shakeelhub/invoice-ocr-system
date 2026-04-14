@@ -1,0 +1,244 @@
+{
+  "name": "LinkedIn Leads via Google Custom Search",
+  "nodes": [
+    {
+      "id": "ManualTrigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [260, 300]
+    },
+    {
+      "id": "InitSet",
+      "name": "Init Variables",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [480, 300],
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "number": [
+            {
+              "name": "current_start_index",
+              "value": 1
+            },
+            {
+              "name": "max_pages",
+              "value": 10
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "HttpGoogleSearch",
+      "name": "Google Custom Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [720, 300],
+      "parameters": {
+        "url": "https://www.googleapis.com/customsearch/v1",
+        "method": "GET",
+        "queryParametersUi": {
+          "parameter": [
+            {
+              "name": "key",
+              "value": "AIzaSyDWdRSHpf-2S4k9v33OfAM62KlZF0Xer-c"
+            },
+            {
+              "name": "cx",
+              "value": "7320b7941306f4c19"
+            },
+            {
+              "name": "q",
+              "value": "site:linkedin.com/in \"CEO\" \"automotive\" \"United States\""
+            },
+            {
+              "name": "start",
+              "value": "={{$json[\"current_start_index\"]}}"
+            }
+          ]
+        },
+        "responseFormat": "json"
+      }
+    },
+    {
+      "id": "CodeParse",
+      "name": "Parse & Paginate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 300],
+      "parameters": {
+        "language": "JavaScript",
+        "jsCode": "const items = $json.items || [];\n\nconst initData = $prevNode(\"Init Variables\").item.json;\nconst currentStart = initData.current_start_index || 1;\nconst maxPages = initData.max_pages || 10;\n\nconst rows = items.map(item => {\n  const title = item.title || \"\";\n  const snippet = item.snippet || \"\";\n  const link = item.link || \"\";\n  const imageUrl = item.pagemap?.cse_image?.[0]?.src || \"\";\n\n  return {\n    Name: title,\n    Title: \"\",\n    Snippet: snippet,\n    \"Profile URL\": link,\n    \"Image URL\": imageUrl\n  };\n});\n\nconst nextStart = currentStart + 10;\nlet continueLoop = true;\n\nif (items.length < 10) {\n  continueLoop = false;\n}\nif (nextStart > maxPages * 10) {\n  continueLoop = false;\n}\n\nreturn rows.map(row => ({\n  json: {\n    ...row,\n    current_start_index: currentStart,\n    next_start_index: nextStart,\n    continue_loop: continueLoop\n  }\n}));"
+      }
+    },
+    {
+      "id": "WaitNode",
+      "name": "Wait 5s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1200, 300],
+      "parameters": {
+        "options": {
+          "unit": "seconds"
+        },
+        "amount": 5
+      }
+    },
+    {
+      "id": "GoogleSheets",
+      "name": "Append to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [1440, 300],
+      "parameters": {
+        "operation": "append",
+        "sheetId": "",
+        "options": {
+          "locationDefine": "define",
+          "locationStyle": "range"
+        },
+        "documentId": "1-Q_Jkj3qgb1p2VLridQTOcKPigWYfQ_c9-1w6FCrQIQ",
+        "range": "Linkedin!A:E",
+        "valueInputMode": "RAW",
+        "columns": [
+          "Name",
+          "Title",
+          "Snippet",
+          "Profile URL",
+          "Image URL"
+        ]
+      }
+    },
+    {
+      "id": "IfContinue",
+      "name": "More Pages?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1680, 300],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"continue_loop\"]}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "SetNext",
+      "name": "Update Start Index",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [1920, 300],
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "number": [
+            {
+              "name": "current_start_index",
+              "value": "={{$json[\"next_start_index\"]}}"
+            },
+            {
+              "name": "max_pages",
+              "value": "={{$prevNode(\"Init Variables\").item.json.max_pages}}"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Init Variables": {
+      "main": [
+        [
+          {
+            "node": "Google Custom Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Init Variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Custom Search": {
+      "main": [
+        [
+          {
+            "node": "Parse & Paginate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Paginate": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5s": {
+      "main": [
+        [
+          {
+            "node": "Append to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Sheet": {
+      "main": [
+        [
+          {
+            "node": "More Pages?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "More Pages?": {
+      "main": [
+        [
+          {
+            "node": "Update Start Index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Start Index": {
+      "main": [
+        [
+          {
+            "node": "Google Custom Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
