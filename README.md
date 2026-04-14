@@ -1,6 +1,6 @@
 # 🧾 Groq Vision Invoice OCR
 
-> *Because manually typing invoice data is a crime against humanity, and you deserve better.*
+> *Because manually typing invoice data is a crime , and you deserve better.*
 
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg)](https://fastapi.tiangolo.com)
@@ -190,21 +190,6 @@ PRs welcome. If you're going to refactor the voting logic, please bring snacks.
 3. Code it
 4. Test it on an actual invoice (we know you have some lying around)
 5. PR it
-
----
-
-## 📜 License
-
-MIT. Use it, abuse it, deploy it to prod at 2am on a Friday. We believe in you.
-
----
-
-## 🙏 Acknowledgements
-
-- [Groq](https://groq.com) for making LLM inference fast enough that we could afford 4 concurrent passes
-- [Meta](https://ai.meta.com) for Llama 4 Scout, which reads invoices better than most humans
-- Whoever invented the Indian GST system for giving us so many fields to extract
-- Stack Overflow, for existing
 
 ---
 
